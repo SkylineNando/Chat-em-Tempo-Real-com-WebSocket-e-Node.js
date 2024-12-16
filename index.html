@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chat Remoto</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f4f4f4;
+    }
+    #chat-container {
+      display: none;
+    }
+    #nickname-container {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    #chat {
+      width: 100%;
+      max-width: 500px;
+      margin: 0 auto;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      background-color: #fff;
+      display: flex;
+      flex-direction: column;
+      height: 500px;
+    }
+    #messages {
+      flex: 1;
+      padding: 10px;
+      overflow-y: scroll;
+      border-bottom: 1px solid #ccc;
+    }
+    #message-input {
+      display: flex;
+    }
+    #message-input input {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      border-top: 1px solid #ccc;
+    }
+    #message-input button {
+      padding: 10px 20px;
+      border: none;
+      background-color: #28a745;
+      color: white;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="nickname-container">
+    <h2>Insira seu apelido</h2>
+    <input type="text" id="nickname" placeholder="Digite seu apelido..." />
+    <button onclick="enterChat()">Entrar no Chat</button>
+  </div>
+
+  <div id="chat-container">
+    <h2>Chat Remoto</h2>
+    <div id="chat">
+      <div id="messages"></div>
+      <div id="message-input">
+        <input type="text" id="input" placeholder="Digite sua mensagem..." />
+        <button onclick="sendMessage()">Enviar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let nickname = '';
+    const ws = new WebSocket('ws://localhost:8080');
+    const messagesDiv = document.getElementById('messages');
+    const input = document.getElementById('input');
+    const nicknameContainer = document.getElementById('nickname-container');
+    const chatContainer = document.getElementById('chat-container');
+
+    function enterChat() {
+      const nicknameInput = document.getElementById('nickname').value.trim();
+      if (nicknameInput !== '') {
+        nickname = nicknameInput;
+        nicknameContainer.style.display = 'none';
+        chatContainer.style.display = 'block';
+      } else {
+        alert('Por favor, insira um apelido válido.');
+      }
+    }
+
+    ws.onmessage = (event) => {
+    const messageElement = document.createElement('div');
+    
+    // Converte o Blob em texto antes de exibir
+    if (event.data instanceof Blob) {
+        event.data.text().then(text => {
+        messageElement.textContent = text;
+        messagesDiv.appendChild(messageElement);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        });
+    } else {
+        messageElement.textContent = event.data;
+        messagesDiv.appendChild(messageElement);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+    };
+
+
+    function sendMessage() {
+      if (input.value.trim() !== '') {
+        const messageToSend = `${nickname}: ${input.value}`;
+        ws.send(messageToSend);
+        input.value = '';
+      }
+    }
+
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') sendMessage();
+    });
+  </script>
+
+</body>
+</html>
